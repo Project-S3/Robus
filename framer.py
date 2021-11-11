@@ -28,6 +28,7 @@ class Framer:
                 e.blender_object.keyframe_insert(data_path="rotation_euler", frame=current_frame)
             time += dt
             current_frame += 1
+        bpy.context.view_layer.update()
 
     def clear_animation(self):
         for e in list(self.entities.values()):
@@ -57,6 +58,22 @@ class Entity:
         self.blender_object.rotation_euler = np.add(self.blender_object.rotation_euler, dr)
         return dr
 
+    def rotate_velocity(self, rotation):
+        v = np.array(self.velocity)
+        rx = np.array([[1, 0, 0],
+                       [0, np.cos(rotation[0]), -np.sin(rotation[0])],
+                       [0, np.sin(rotation[0]), np.cos(rotation[0])]])
+        ry = np.array([[np.cos(rotation[1]), 0, np.sin(rotation[1])],
+                       [0, 1, 0],
+                       [-np.sin(rotation[1]), 0, np.cos(rotation[1])]])
+        rz = np.array([[np.cos(rotation[2]), -np.sin(rotation[2]), 0],
+                       [np.sin(rotation[2]), np.cos(rotation[2]), 0],
+                       [0, 0, 1]])
+        v = rx @ v
+        v = ry @ v
+        v = rz @ v
+        self.velocity = v.tolist()
+
     def get_location(self):
         return self.blender_object.location
 
@@ -68,3 +85,13 @@ class Entity:
 
     def set_rotation(self, rotation):
         self.blender_object.rotation_euler = rotation
+
+    def get_direction(self):
+        if self.velocity[1] == 0:
+            direction = 0
+        else:
+            direction = np.arctan(self.velocity[0]/self.velocity[1])
+        if self.velocity[0] < 0:
+            direction += np.pi
+        return direction
+
