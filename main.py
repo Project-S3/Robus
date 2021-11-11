@@ -11,6 +11,7 @@ import robus
 
 def is_reloadable_module(module):
     if not hasattr(module, "__file__"): return False
+    if module.__file__ is None: return False
     file_path = pathlib.Path(module.__file__)
     return file_path.is_relative_to(PROJECT_BASE_PATH) \
            and not file_path.is_relative_to(PROJECT_BASE_PATH.joinpath("venv")) \
