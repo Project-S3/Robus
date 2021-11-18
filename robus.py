@@ -31,7 +31,7 @@ def main():
     car = Car("Car", cs)
     car.set_location([0, 0, 0])
     car.set_rotation([np.pi/2, 0, 0])
-    car.velocity = [0, 50, 0]
+    car.velocity = [0, 150, 0]
     car.acceleration = [0, 0, 0]
     # car.angular_velocity = [0, 0, 3.14/1000]
 
@@ -49,5 +49,5 @@ def main():
         "test": te
     }
     f.clear_animation()
-    f.play_animation(second=20)
+    f.play_animation(second=30)
 
