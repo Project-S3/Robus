@@ -28,7 +28,6 @@ class Framer:
                 e.blender_object.keyframe_insert(data_path="rotation_euler", frame=current_frame)
             time += dt
             current_frame += 1
-        bpy.context.view_layer.update()
 
     def clear_animation(self):
         for e in list(self.entities.values()):

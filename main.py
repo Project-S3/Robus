@@ -2,8 +2,7 @@ import sys
 import pathlib
 import importlib
 
-
-PROJECT_BASE_PATH = pathlib.Path(r"<PATH TO THE PROJECT>")  # Todo Insert the path tho the project ex: C:\robus
+PROJECT_BASE_PATH = pathlib.Path(r"D:/robus")
 sys.path.append(PROJECT_BASE_PATH.__str__())  # Needed to use import in blender
 
 import robus
@@ -29,5 +28,6 @@ def reload_module():
 if __name__ == '__main__':
     reload_module()
     robus.main()
+
 
 

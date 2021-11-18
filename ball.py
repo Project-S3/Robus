@@ -1,10 +1,4 @@
-from importlib.machinery import SourceFileLoader
-
-framer = SourceFileLoader("framer", "C:/data/SunFounderCar/framer.py").load_module()
-
 from framer import *
-
-import numpy as np
 
 
 def obj_update(ball, time, entities, changes):
@@ -21,10 +15,10 @@ class Ball(Entity):
         children = {ob.name: ob for ob in self.car.blender_object.children}
         self.plate = children["Plate"]
 
-
     def set_acceleration_from_car(self):
-        angle = self.get_distance_from_center()/np.sqrt(np.power(140, 2)-np.power(self.get_distance_from_center(), 2))
-        acc_ball_center = 9.81*np.cos(angle)*np.sin(angle)*1000
+        angle = self.get_distance_from_center() / np.sqrt(
+            np.power(140, 2) - np.power(self.get_distance_from_center(), 2))
+        acc_ball_center = 9.81 * np.cos(angle) * np.sin(angle) * 1000
 
         ball_velocity = np.subtract(self.velocity, self.car.velocity)
 
@@ -42,13 +36,16 @@ class Ball(Entity):
         else:
             signe_friction_y = 0
 
-        friction = 9.81*0.006*np.power(np.cos(angle), 2)*1000
+        friction = 9.81 * 0.006 * np.power(np.cos(angle), 2) * 1000
 
-        self.acceleration[0] = acc_ball_center*np.cos(self.get_direction_acc_ball_center()) + self.car.acceleration[0] + signe_friction_x * friction
-        self.acceleration[1] = acc_ball_center*np.sin(self.get_direction_acc_ball_center()) + self.car.acceleration[1] + signe_friction_y * friction
+        self.acceleration[0] = acc_ball_center * np.cos(self.get_direction_acc_ball_center()) + self.car.acceleration[
+            0] + signe_friction_x * friction
+        self.acceleration[1] = acc_ball_center * np.sin(self.get_direction_acc_ball_center()) + self.car.acceleration[
+            1] + signe_friction_y * friction
 
     def set_location_y(self):
-        self.blender_object.location[2] = 140 - np.sqrt(np.power(140, 2) - np.power(self.get_distance_from_center(), 2)) + 43.75
+        self.blender_object.location[2] = 140 - np.sqrt(
+            np.power(140, 2) - np.power(self.get_distance_from_center(), 2)) + 43.75
 
     def get_plate_location(self):
         plate_location = [0, 39, 39]
@@ -67,9 +64,9 @@ class Ball(Entity):
         if y == 0:
             direction = 0
         elif x == 0:
-            direction = np.pi/2
+            direction = np.pi / 2
         else:
-            direction = np.arctan(y/x)
+            direction = np.arctan(y / x)
         if x < 0:
             direction += np.pi
         return direction

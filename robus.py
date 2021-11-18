@@ -1,6 +1,9 @@
-from framer import *
-from car import *
+import numpy as np
+
 from ball import *
+from car import *
+from framer import *
+
 
 def main():
     print("hello world")
