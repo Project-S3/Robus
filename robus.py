@@ -2,14 +2,15 @@ import bpy
 from PIL import Image
 
 from main import PROJECT_BASE_PATH
+import pathlib
+import os
 from ball import *
 from car import *
 from color_sensor import *
 from framer import *
 
-
 def main():
-    floor_matrix = np.asarray(Image.open('path.png').convert('L'))
+    floor_matrix = np.asarray(Image.open(os.path.join(PROJECT_BASE_PATH, pathlib.Path('path.png'))).convert('L'))
     floor = Floor(floor_matrix)
 
     blender_img = bpy.data.objects["Image"]
