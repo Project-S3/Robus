@@ -47,7 +47,7 @@ class Entity:
 
     def update_location_frame(self, dt):
         dv = np.multiply(self.acceleration, dt)
-        dl = np.multiply(self.velocity, dt)
+        dl = np.multiply(self.velocity, dt) + np.multiply(self.acceleration, np.power(dt, 2))
         self.velocity = np.add(self.velocity, dv)
         self.blender_object.location = np.add(self.blender_object.location, dl)
         return dv, dl
