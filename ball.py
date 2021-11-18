@@ -1,3 +1,5 @@
+import numpy as np
+
 from framer import *
 
 
@@ -52,10 +54,10 @@ class Ball(Entity):
         return np.add(self.car.get_location(), self.rotate_vector(plate_location, [0, 0, self.car.get_rotation()[2]]))
 
     def get_distance_from_center(self):
-        print(self.get_plate_location())
+        # print(self.get_plate_location())
         x = self.get_location()[0] - self.get_plate_location()[0]
         y = self.get_location()[1] - self.get_plate_location()[1]
-        print(np.sqrt(np.power(x, 2) + np.power(y, 2)))
+        # print(np.sqrt(np.power(x, 2) + np.power(y, 2)))
         return np.sqrt(np.power(x, 2) + np.power(y, 2))
 
     def get_direction_acc_ball_center(self):

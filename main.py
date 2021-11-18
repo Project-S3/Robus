@@ -1,9 +1,12 @@
 import sys
 import pathlib
 import importlib
+import os
 
 PROJECT_BASE_PATH = pathlib.Path(r"D:/robus")
-sys.path.append(PROJECT_BASE_PATH.__str__())  # Needed to use import in blender
+# Needed to use import in blender
+sys.path.append(str(PROJECT_BASE_PATH))
+sys.path.append(str(os.path.join(PROJECT_BASE_PATH, pathlib.Path("venv/lib/site-packages"))))
 
 import robus
 

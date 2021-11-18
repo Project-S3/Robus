@@ -1,6 +1,9 @@
+import bpy
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
+
+from utils import rotate_vector
 
 
 class Floor:
@@ -14,19 +17,27 @@ class Floor:
         index = (int(index[0]), int(index[1]))
         return self.matrix[index]
 
+    def get_scale(self):
+        s = self.matrix.shape[0] / (5 / self.px_unit)
+        return [s, s, 1]
+
 
 class ColorSensor:
     def __init__(self, position_offsets, floor):
         self.position_offsets = position_offsets
         self.floor = floor
 
-    def read(self, car_position):
+    def read(self, car_position, car_rotation_z):
         car = (car_position[0], car_position[1])
-        p0 = np.add(car, self.position_offsets[0])
-        p1 = np.add(car, self.position_offsets[1])
-        p2 = np.add(car, self.position_offsets[2])
-        p3 = np.add(car, self.position_offsets[3])
-        p4 = np.add(car, self.position_offsets[4])
+
+        p0 = np.add(car, rotate_vector(self.position_offsets[0], [0, 0, car_rotation_z])[0:2])
+        p1 = np.add(car, rotate_vector(self.position_offsets[1], [0, 0, car_rotation_z])[0:2])
+        p2 = np.add(car, rotate_vector(self.position_offsets[2], [0, 0, car_rotation_z])[0:2])
+        p3 = np.add(car, rotate_vector(self.position_offsets[3], [0, 0, car_rotation_z])[0:2])
+        p4 = np.add(car, rotate_vector(self.position_offsets[4], [0, 0, car_rotation_z])[0:2])
+
+        bpy.data.objects["Test"].location = [p2[0], p2[1], 20]
+
         return [
             self.floor.get_value_at_position(x=p0[0], y=p0[1]),
             self.floor.get_value_at_position(x=p1[0], y=p1[1]),

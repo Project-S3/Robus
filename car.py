@@ -6,15 +6,25 @@ import framer
 def obj_update(car, time, entities, changes):
     car.velocity = rotate_vector(car.velocity, changes["delta_rotation"])
     car.acceleration = rotate_vector(car.acceleration, changes["delta_rotation"])
-    if time > 10:
-        print("lol")
-        car.angular_velocity = [0, 0, -np.pi/6]
+
+    lines = car.color_sensor.read(car.get_location(), car.get_rotation()[2])
+
+    print(lines)
+
+    if len(list(filter(lambda x: x < 50, lines))) == 5:
+        car.set_speed(0)
+        print("Finish Line")
+
+    if len(list(filter(lambda x: x > 240, lines))) == 5:
+        car.set_speed(0)
+        print("Line Lost")
 
 
 class Car(framer.Entity):
-    def __init__(self, blender_object_name):
+    def __init__(self, blender_object_name, color_sensor):
         super().__init__(blender_object_name)
         self.update_callback = obj_update
+        self.color_sensor = color_sensor
 
     def get_speed(self):
         return np.linalg.norm(self.velocity)
