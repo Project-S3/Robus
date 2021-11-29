@@ -4,6 +4,7 @@ import os
 from ball import *
 from car import *
 from color_sensor import *
+from distance_sensor import *
 from framer import *
 
 
@@ -25,9 +26,10 @@ def get_car_color_sensor():
         [40, 97, 0]
     ], floor=floor)
 
+    ds = DistanceSensor()
 
 def main():
-    car = Car("Car", get_car_color_sensor())
+    car = Car("Car", get_car_color_sensor(),ds)
     car.set_location([0, 0, 0])
     car.set_rotation([np.pi/2, 0, 0])
     car.velocity = [0, 150, 0]

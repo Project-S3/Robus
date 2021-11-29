@@ -3,7 +3,7 @@ import pathlib
 import importlib
 import os
 
-PROJECT_BASE_PATH = pathlib.Path(r"D:/robus")
+PROJECT_BASE_PATH = pathlib.Path(r"S:\Udes\Projet\Robus")
 # Needed to use import in blender
 sys.path.append(str(PROJECT_BASE_PATH))
 sys.path.append(str(os.path.join(PROJECT_BASE_PATH, pathlib.Path("venv/lib/site-packages"))))
