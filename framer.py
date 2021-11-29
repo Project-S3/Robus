@@ -13,6 +13,7 @@ class Framer:
         max_frame = second * bpy.context.scene.render.fps
         bpy.context.scene.frame_end = max_frame + 15
         while current_frame <= max_frame:
+            print(f"### CURRENT FRAME ### -> {current_frame}")
             dt = 1 / bpy.context.scene.render.fps
             for e in list(self.entities.values()):
 
