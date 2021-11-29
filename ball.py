@@ -1,10 +1,11 @@
 import numpy as np
 
+import utils
 from framer import *
 
 
 def obj_update(ball, time, entities, changes):
-    ball.rotate_velocity(changes["delta_rotation"])
+    ball.velocity = utils.rotate_vector(ball.velocity, changes["delta_rotation"])
     ball.set_acceleration_from_car()
     ball.set_location_y()
 
@@ -51,7 +52,7 @@ class Ball(Entity):
 
     def get_plate_location(self):
         plate_location = [0, 39, 39]
-        return np.add(self.car.get_location(), self.rotate_vector(plate_location, [0, 0, self.car.get_rotation()[2]]))
+        return np.add(self.car.get_location(), utils.rotate_vector(plate_location, [0, 0, self.car.get_rotation()[2]]))
 
     def get_distance_from_center(self):
         # print(self.get_plate_location())
@@ -72,19 +73,3 @@ class Ball(Entity):
         if x < 0:
             direction += np.pi
         return direction
-
-    def rotate_vector(self, vec, rotation):
-        v = np.array(vec)
-        rx = np.array([[1, 0, 0],
-                       [0, np.cos(rotation[0]), -np.sin(rotation[0])],
-                       [0, np.sin(rotation[0]), np.cos(rotation[0])]])
-        ry = np.array([[np.cos(rotation[1]), 0, np.sin(rotation[1])],
-                       [0, 1, 0],
-                       [-np.sin(rotation[1]), 0, np.cos(rotation[1])]])
-        rz = np.array([[np.cos(rotation[2]), -np.sin(rotation[2]), 0],
-                       [np.sin(rotation[2]), np.cos(rotation[2]), 0],
-                       [0, 0, 1]])
-        v = rx @ v
-        v = ry @ v
-        v = rz @ v
-        return v.tolist()

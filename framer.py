@@ -57,22 +57,6 @@ class Entity:
         self.blender_object.rotation_euler = np.add(self.blender_object.rotation_euler, dr)
         return dr
 
-    def rotate_velocity(self, rotation):
-        v = np.array(self.velocity)
-        rx = np.array([[1, 0, 0],
-                       [0, np.cos(rotation[0]), -np.sin(rotation[0])],
-                       [0, np.sin(rotation[0]), np.cos(rotation[0])]])
-        ry = np.array([[np.cos(rotation[1]), 0, np.sin(rotation[1])],
-                       [0, 1, 0],
-                       [-np.sin(rotation[1]), 0, np.cos(rotation[1])]])
-        rz = np.array([[np.cos(rotation[2]), -np.sin(rotation[2]), 0],
-                       [np.sin(rotation[2]), np.cos(rotation[2]), 0],
-                       [0, 0, 1]])
-        v = rx @ v
-        v = ry @ v
-        v = rz @ v
-        self.velocity = v.tolist()
-
     def get_location(self):
         return self.blender_object.location
 

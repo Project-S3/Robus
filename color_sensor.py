@@ -36,6 +36,7 @@ class ColorSensor:
         p3 = np.add(car, rotate_vector(self.position_offsets[3], [0, 0, car_rotation_z])[0:2])
         p4 = np.add(car, rotate_vector(self.position_offsets[4], [0, 0, car_rotation_z])[0:2])
 
+        # TODO remove
         bpy.data.objects["Test"].location = [p2[0], p2[1], 20]
 
         return [

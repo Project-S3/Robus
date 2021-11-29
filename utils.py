@@ -16,3 +16,9 @@ def rotate_vector(vec, rotation):
     v = ry @ v
     v = rz @ v
     return v.tolist()
+
+
+def set_module_vector(vec, new_module):
+    if new_module == 0: return [0, 0, 0]
+    factor = np.linalg.norm(vec) / new_module
+    return np.divide(vec, factor)
