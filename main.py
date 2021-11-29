@@ -29,6 +29,7 @@ def reload_module():
 
 
 if __name__ == '__main__':
+    os.system("cls")
     reload_module()
     robus.main()
 
