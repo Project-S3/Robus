@@ -26,15 +26,16 @@ def get_car_color_sensor():
         [40, 97, 0]
     ], floor=floor)
 
-    ds = DistanceSensor()
+    
 
 def main():
-    car = Car("Car", get_car_color_sensor(),ds)
+    ds = DistanceSensor()
+    car = Car("Car", get_car_color_sensor(), ds)
     car.set_location([0, 0, 0])
-    car.set_rotation([np.pi/2, 0, 0])
+    car.set_rotation([np.pi / 2, 0, 0])
     car.velocity = [0, 150, 0]
     car.acceleration = [0, 0, 0]
-    car.angular_velocity = [0, 0, 3.14/10]
+    car.angular_velocity = [0, 0, 3.14 / 10]
 
     ball = Ball("Ball", car)
     ball.set_location([0, 30, 45])
@@ -49,4 +50,3 @@ def main():
     }
     f.clear_animation()
     f.play_animation(second=30)
-
