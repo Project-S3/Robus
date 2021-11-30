@@ -32,7 +32,7 @@ def main():
     car = Car("Car", get_car_color_sensor(), ds)
     car.set_location([0, 0, 0])
     car.set_rotation([np.pi / 2, 0, 0])
-    car.velocity = [0, 500, 0]
+    car.velocity = [0, 0, 0]
     car.acceleration = [0, 0, 0]
     car.angular_velocity = [0, 0, 0]
 
@@ -48,4 +48,4 @@ def main():
         # "test": Entity(blender_object_name="Test")
     }
     f.clear_animation()
-    f.play_animation(second=5)
+    f.play_animation(second=45)

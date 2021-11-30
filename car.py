@@ -11,8 +11,6 @@ def obj_update(car, time, entities, changes):
     car.velocity = utils.rotate_vector(car.velocity, changes["delta_rotation"])
     car.acceleration = utils.rotate_vector(car.acceleration, changes["delta_rotation"])
 
-    colorSensorValues = car.color_sensor.read(car.get_location(), car.get_rotation()[2])
-
     car.mef_control.update()
 
 
@@ -23,6 +21,7 @@ class Car(framer.Entity):
         self.color_sensor = color_sensor
         self.distance_sensor = distance_sensor
         self.mef_control = MefControl(self)
+        self.wheel_angle = 0
 
     def get_speed(self):
         return np.linalg.norm(self.velocity)
@@ -32,6 +31,18 @@ class Car(framer.Entity):
             self.velocity = [speed, 0, 0]
         else:
             self.velocity = utils.set_module_vector(self.velocity, speed)
+        self._update_angular_speed()
 
-    def set_front_wheel_angle(self):
-        pass
+    def set_front_wheel_angle(self, angle):
+        self.wheel_angle = angle
+        self._update_angular_speed()
+
+    def _update_angular_speed(self):
+        distance_GO = np.sqrt(np.power(140*np.tan(np.deg2rad(90-self.wheel_angle)) + 135/2, 2) + np.power(140/2, 2))
+        #print(f"distance_GO : {distance_GO}")
+        angular_speed = self.get_speed() / distance_GO
+        if self.wheel_angle < 0:
+            angular_speed = angular_speed * -1
+        #print(f"angular_speed : {angular_speed}")
+        self.angular_velocity = [0, 0, angular_speed]
+
