@@ -26,6 +26,7 @@ class MefControl:
     def update(self):
         self.setNextState()
         self.setState()
+        print(self.state)
         self.setOutput()
 
     def setState(self):
@@ -35,80 +36,79 @@ class MefControl:
         if self.check_color_sensor() == 3:
             self.next_state = State.STOP_FOR_END
             return
-        match self.state:
-            case State.START:
+        if self.state == State.START:
+            self.next_state = State.ACCELERATION
+        elif self.state == State.ACCELERATION:
+            if self.check_distance_sensor() == 1:
+                self.next_state = State.STOP
+            elif self.car.get_speed() >= self.MAX_SPEED:
+                self.next_state = State.MAX_SPEED
+            elif self.check_color_sensor() == 1:
+                self.next_state = State.TURN_LEFT
+            elif self.check_color_sensor() == 2:
+                self.next_state = State.TURN_RIGHT
+            else:
                 self.next_state = State.ACCELERATION
-            case State.ACCELERATION:
-                if self.check_distance_sensor() == 1:
-                    self.next_state = State.STOP
-                elif self.car.get_speed() >= self.MAX_SPEED:
-                    self.next_state = State.MAX_SPEED
-                elif self.check_color_sensor() == 1:
-                    self.next_state = State.TURN_LEFT
-                elif self.check_color_sensor() == 2:
-                    self.next_state = State.TURN_RIGHT
-                else:
-                    self.next_state = State.ACCELERATION
-            case State.TURN_LEFT:
-                if self.car.get_speed() >= self.MAX_SPEED:
-                    self.next_state = State.MAX_SPEED
-                else:
-                    self.next_state = State.ACCELERATION
-            case State.TURN_RIGHT:
-                if self.car.get_speed() >= self.MAX_SPEED:
-                    self.next_state = State.MAX_SPEED
-                else:
-                    self.next_state = State.ACCELERATION
-            case State.MAX_SPEED:
-                if self.check_distance_sensor() == 1:
-                    self.next_state = State.STOP
-                elif self.check_color_sensor() == -1:
-                    self.next_state = State.TURN_LEFT
-                elif self.check_color_sensor() == 1:
-                    self.next_state = State.TURN_RIGHT
-                else:
-                    self.next_state = State.MAX_SPEED
-            case State.STOP:
-                if self.car.get_speed() == 0:
-                    self.next_state = State.GET_AROUND_OBJECT
-                else:
-                    self.next_state = State.STOP
-            case State.GET_AROUND_OBJECT:
-                if self.check_color_sensor() == -1:
-                    self.next_state = State.GET_AROUND_OBJECT
-                else:
-                    self.next_state = State.ACCELERATION
-            case State.STOP_FOR_END:
-                if self.car.get_speed() == 0:
-                    self.next_state = State.END
-                else:
-                    self.next_state = State.STOP_FOR_END
-            case State.END:
+        elif self.state == State.TURN_LEFT:
+            if self.car.get_speed() >= self.MAX_SPEED:
+                self.next_state = State.MAX_SPEED
+            else:
+                self.next_state = State.ACCELERATION
+        elif self.state == State.TURN_RIGHT:
+            if self.car.get_speed() >= self.MAX_SPEED:
+                self.next_state = State.MAX_SPEED
+            else:
+                self.next_state = State.ACCELERATION
+        elif self.state == State.MAX_SPEED:
+            if self.check_distance_sensor() == 1:
+                self.next_state = State.STOP
+            elif self.check_color_sensor() == -1:
+                self.next_state = State.TURN_LEFT
+            elif self.check_color_sensor() == 1:
+                self.next_state = State.TURN_RIGHT
+            else:
+                self.next_state = State.MAX_SPEED
+        elif self.state == State.STOP:
+            if self.car.get_speed() == 0:
+                self.next_state = State.GET_AROUND_OBJECT
+            else:
+                self.next_state = State.STOP
+        elif self.state == State.GET_AROUND_OBJECT:
+            if self.check_color_sensor() == -1:
+                self.next_state = State.GET_AROUND_OBJECT
+            else:
+                self.next_state = State.ACCELERATION
+        elif self.state == State.STOP_FOR_END:
+            if self.car.get_speed() == 0:
                 self.next_state = State.END
+            else:
+                self.next_state = State.STOP_FOR_END
+        elif self.state == State.END:
+            self.next_state = State.END
 
     def setOutput(self):
-        match self.state:
-            case State.START:
-                self.car.acceleration = [0, 0, 0]
-                self.car.set_front_wheel_angle(0)
-            case State.ACCELERATION:
-                self.car.acceleration = utils.rotate_vector([self.MAX_ACCELERATION, 0], self.car.get_rotation())
-            case State.TURN_LEFT:
-                self.car.set_front_wheel_angle(5)
-            case State.TURN_RIGHT:
-                self.car.set_front_wheel_angle(-5)
-            case State.MAX_SPEED:
-                self.car.acceleration = [0, 0, 0]
-            case State.STOP:
-                self.car.acceleration = utils.rotate_vector([-self.MAX_ACCELERATION, 0], self.car.get_rotation())
-            case State.GET_AROUND_OBJECT:
-                pass
-                # TODO
-            case State.STOP_FOR_END:
-                self.car.acceleration = utils.rotate_vector([-self.MAX_ACCELERATION, 0], self.car.get_rotation())
-            case State.END:
-                self.car.acceleration = [0, 0, 0]
-                self.car.velocity = [0, 0, 0]
+        if self.state == State.START:
+            self.car.acceleration = [0, 0, 0]
+            self.car.set_front_wheel_angle(0)
+        elif self.state == State.ACCELERATION:
+            self.car.acceleration = utils.rotate_vector([self.MAX_ACCELERATION, 0, 0], self.car.get_rotation())
+        elif self.state == State.TURN_LEFT:
+            self.car.set_front_wheel_angle(5)
+        elif self.state == State.TURN_RIGHT:
+            self.car.set_front_wheel_angle(-5)
+        elif self.state == State.MAX_SPEED:
+            self.car.acceleration = [0, 0, 0]
+        elif self.state == State.STOP:
+            #self.car.acceleration = utils.rotate_vector([-self.MAX_ACCELERATION, 0, 0], self.car.get_rotation())
+            self.car.set_speed(0)
+        elif self.state == State.GET_AROUND_OBJECT:
+            pass
+            # TODO
+        elif self.state == State.STOP_FOR_END:
+            self.car.acceleration = utils.rotate_vector([-self.MAX_ACCELERATION, 0, 0], self.car.get_rotation())
+        elif self.state == State.END:
+            self.car.acceleration = [0, 0, 0]
+            self.car.velocity = [0, 0, 0]
 
     def check_color_sensor(self):
         # 0 = sur la ligne
@@ -121,4 +121,9 @@ class MefControl:
     def check_distance_sensor(self):
         # 0 = pas d'objet
         # 1 = objet détecté
-        return 0
+
+        distanceSensorValue = self.car.distance_sensor.read(self.car.get_location(), self.car.get_rotation()[2])
+        if 0 <= distanceSensorValue <= 10:
+            return 1
+        else:
+            return 0

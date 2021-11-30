@@ -4,6 +4,7 @@ import framer
 import distance_sensor as ds
 from mathutils import Vector
 import utils
+from mef_control import *
 
 
 def obj_update(car, time, entities, changes):
@@ -11,10 +12,8 @@ def obj_update(car, time, entities, changes):
     car.acceleration = utils.rotate_vector(car.acceleration, changes["delta_rotation"])
 
     colorSensorValues = car.color_sensor.read(car.get_location(), car.get_rotation()[2])
-    distanceSensorValue = car.distance_sensor.read(car.get_location(), car.get_rotation()[2])
 
-    if 0 <= distanceSensorValue <= 10:
-        car.set_speed(0)
+    car.mef_control.update()
 
 
 class Car(framer.Entity):
@@ -23,6 +22,7 @@ class Car(framer.Entity):
         self.update_callback = obj_update
         self.color_sensor = color_sensor
         self.distance_sensor = distance_sensor
+        self.mef_control = MefControl(self)
 
     def get_speed(self):
         return np.linalg.norm(self.velocity)
