@@ -48,4 +48,4 @@ def main():
         # "test": Entity(blender_object_name="Test")
     }
     f.clear_animation()
-    f.play_animation(second=45)
+    f.play_animation(second=75)

@@ -1,6 +1,5 @@
 from enum import Enum
 import utils
-import numpy as np
 
 class State(Enum):
     START = 1
@@ -17,7 +16,7 @@ class MefControl:
         self.car = car
         self.state = State.START
         self.next_state = State.START
-        self.angle_rotation_wheels = 0
+        self.frames_get_around_object = 0
 
         self.MAX_SPEED = 200
         self.MAX_ACCELERATION = 500
@@ -72,11 +71,11 @@ class MefControl:
             else:
                 self.next_state = State.STOP
         elif self.state == State.GET_AROUND_OBJECT:
-            if self.check_color_sensor() == -1:
+            if self.frames_get_around_object <= 962:
                 self.next_state = State.GET_AROUND_OBJECT
             else:
-                #self.next_state = State.ACCELERATION
-                self.next_state = State.END
+                self.next_state = State.ACCELERATION
+                self.frames_get_around_object = 0 # reset for next object
         elif self.state == State.END:
             self.next_state = State.END
 
@@ -89,23 +88,59 @@ class MefControl:
             color_sensor_values = self.car.color_sensor.read(self.car.get_location(), self.car.get_rotation()[2])
             if color_sensor_values[0] < self.THRESHOLD_COLOR_SENSOR or color_sensor_values[1] < self.THRESHOLD_COLOR_SENSOR:
                 if color_sensor_values[0] < self.THRESHOLD_COLOR_SENSOR:
-                    self.angle_rotation_wheels = self.ANGLE_BIG_ROTATION
+                    self.car.set_front_wheel_angle(self.ANGLE_BIG_ROTATION)
                 else:
-                    self.angle_rotation_wheels = self.ANGLE_SMALL_ROTATION
+                    self.car.set_front_wheel_angle(self.ANGLE_SMALL_ROTATION)
             elif color_sensor_values[3] < self.THRESHOLD_COLOR_SENSOR or color_sensor_values[4] < self.THRESHOLD_COLOR_SENSOR:
                 if color_sensor_values[4] < self.THRESHOLD_COLOR_SENSOR:
-                    self.angle_rotation_wheels = -self.ANGLE_BIG_ROTATION
+                    self.car.set_front_wheel_angle(-self.ANGLE_BIG_ROTATION)
                 else:
-                    self.angle_rotation_wheels = -self.ANGLE_SMALL_ROTATION
-            self.car.set_front_wheel_angle(self.angle_rotation_wheels)
+                    self.car.set_front_wheel_angle(-self.ANGLE_SMALL_ROTATION)
         elif self.state == State.MAX_SPEED:
             self.car.acceleration = [0, 0, 0]
         elif self.state == State.STOP:
             self.car.acceleration = utils.rotate_vector([0, 0, self.MAX_ACCELERATION], self.car.get_rotation())
         elif self.state == State.GET_AROUND_OBJECT:
-            self.car.acceleration = [0, 0, 0]
-            self.car.set_speed(0)
-            # TODO
+            #PAUSE
+            if self.frames_get_around_object < 300:
+                self.car.acceleration = [0, 0, 0]
+                self.car.set_speed(0)
+            # RECULON
+            elif self.frames_get_around_object < 400:
+                self.car.set_front_wheel_angle(0)
+                if self.car.get_speed() < self.MAX_SPEED:
+                    self.car.acceleration = utils.rotate_vector([0, 0, self.MAX_ACCELERATION], self.car.get_rotation())
+                else:
+                    self.car.acceleration = [0, 0, 0]
+            # STOP
+            elif self.frames_get_around_object < 450:
+                self.car.set_front_wheel_angle(0)
+                if self.car.get_speed() <= 10:
+                    self.car.set_speed(0)
+                else:
+                    self.car.acceleration = utils.rotate_vector([0, 0, -self.MAX_ACCELERATION], self.car.get_rotation())
+            # REPARTIR
+            elif self.frames_get_around_object < 500:
+                self.car.set_front_wheel_angle(0)
+                if self.car.get_speed() < self.MAX_SPEED:
+                    self.car.acceleration = utils.rotate_vector([0, 0, -self.MAX_ACCELERATION], self.car.get_rotation())
+                else:
+                    self.car.acceleration = [0, 0, 0]
+            # CONTOURNER
+            elif self.frames_get_around_object < 600:
+                self.car.set_front_wheel_angle(25)
+            elif self.frames_get_around_object < 662:
+                self.car.set_front_wheel_angle(-25)
+            elif self.frames_get_around_object < 800:
+                self.car.set_front_wheel_angle(0)
+            elif self.frames_get_around_object < 862:
+                self.car.set_front_wheel_angle(-25)
+            elif self.frames_get_around_object < 962:
+                self.car.set_front_wheel_angle(25)
+            elif self.frames_get_around_object == 962:
+                self.car.set_front_wheel_angle(-25)
+
+            self.frames_get_around_object += 1
         elif self.state == State.END:
             self.car.acceleration = [0, 0, 0]
             self.car.set_speed(0)
