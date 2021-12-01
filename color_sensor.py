@@ -7,19 +7,26 @@ from utils import rotate_vector
 
 
 class Floor:
-    def __init__(self, floor_matrix, px_unit_mm=5, center_point=None):
+    def __init__(self, floor_matrix, *, px_unit_mm=5, center_point=(0, 0)):
         self.matrix = floor_matrix
         self.px_unit = px_unit_mm
-        self.center_point = center_point if center_point is not None else (int(floor_matrix.shape[0] / 2), int(floor_matrix.shape[0] / 2))
+
+        self.offset_px = np.subtract(np.divide(self.matrix.shape[0:2], 2), center_point)
+        self.center_point_offset = np.multiply(self.offset_px, self.px_unit)
 
     def get_value_at_position(self, x, y):
-        index = np.add(self.center_point, (x / self.px_unit, y / self.px_unit))
+        index = (x / self.px_unit, y / self.px_unit)
+        index = np.add(index, np.divide(self.matrix.shape[0:2], 2))
+        index = np.subtract(index, self.offset_px)
         index = (int(index[0]), int(index[1]))
         return self.matrix[index]
 
     def get_scale(self):
         s = self.matrix.shape[0] / (5 / self.px_unit)
         return [s, s, 1]
+
+    def get_location(self, z=0):
+        return np.append(self.center_point_offset, z)
 
 
 class ColorSensor:

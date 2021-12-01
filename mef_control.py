@@ -22,8 +22,8 @@ class MefControl:
         self.MAX_ACCELERATION = 500
 
         self.THRESHOLD_COLOR_SENSOR = 30
-        self.ANGLE_SMALL_ROTATION = 2
-        self.ANGLE_BIG_ROTATION = 25
+        self.ANGLE_SMALL_ROTATION = 10
+        self.ANGLE_BIG_ROTATION = 45
 
     def update(self):
         self.setNextState()

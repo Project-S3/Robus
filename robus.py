@@ -11,12 +11,12 @@ from framer import *
 def get_car_color_sensor():
     absolute_image_path = os.path.join(PROJECT_BASE_PATH, pathlib.Path('path.png'))
     floor_matrix = np.asarray(Image.open(absolute_image_path).convert('L'))
-    floor = Floor(floor_matrix)
+    floor = Floor(floor_matrix, center_point=(480, 80))
 
     blender_img = bpy.data.objects["Image"]
     blender_img.scale = floor.get_scale()
     blender_img.rotation_euler = [0, 0, np.pi / 2]
-    blender_img.location = [0, 0, -37]
+    blender_img.location = floor.get_location(z=-37)
 
     return ColorSensor(position_offsets=[
         [-40, 97, 0],
@@ -27,7 +27,7 @@ def get_car_color_sensor():
     ], floor=floor)
 
 
-def main():
+def main(second=10):
     ds = DistanceSensor()
     car = Car("Car", get_car_color_sensor(), ds)
     car.set_location([0, 0, 0])
@@ -48,4 +48,4 @@ def main():
         # "test": Entity(blender_object_name="Test")
     }
     f.clear_animation()
-    f.play_animation(second=75)
+    f.play_animation(second=second)
