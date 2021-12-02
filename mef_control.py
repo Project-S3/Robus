@@ -30,6 +30,7 @@ class MefControl:
         self.setNextState()
         self.setState()
         self.setOutput()
+        print(f"speed : {self.car.get_speed()}")
 
     def setState(self):
         self.state = self.next_state
@@ -80,7 +81,7 @@ class MefControl:
             else:
                 self.next_state = State.GET_AROUND_OBJECT
         elif self.state == State.GET_AROUND_OBJECT:
-            if self.frames_get_around_object <= 833:
+            if self.frames_get_around_object <= 683+25 or (self.frames_get_around_object <= 833+25 and self.check_color_sensor == -1):
                 self.next_state = State.GET_AROUND_OBJECT
             else:
                 self.next_state = State.ACCELERATION
@@ -127,23 +128,15 @@ class MefControl:
                 self.car.set_speed(0)
             # REPARTIR
             if self.frames_get_around_object < 320:
-                self.car.set_front_wheel_angle(0)
+                self.car.set_front_wheel_angle(25)
                 if self.car.get_speed() < self.MAX_SPEED/2:
                     self.car.acceleration = utils.rotate_vector([0, 0, -self.MAX_ACCELERATION], self.car.get_rotation())
                 else:
                     self.car.acceleration = [0, 0, 0]
             # CONTOURNER
-            elif self.frames_get_around_object < 320+150:
+            elif self.frames_get_around_object < 320+175:
                 self.car.set_front_wheel_angle(25)
-            elif self.frames_get_around_object < 320+150+94:
-                self.car.set_front_wheel_angle(-25)
-            elif self.frames_get_around_object < 320+150+94+25:
-                self.car.set_front_wheel_angle(0)
-            elif self.frames_get_around_object < 320+150+94+25+94:
-                self.car.set_front_wheel_angle(-25)
-            elif self.frames_get_around_object < 320+150+94+25+94+150:
-                self.car.set_front_wheel_angle(25)
-            elif self.frames_get_around_object == 320+150+94+25+94+150:
+            else:
                 self.car.set_front_wheel_angle(-25)
             self.frames_get_around_object += 1
         elif self.state == State.END:
