@@ -7,8 +7,9 @@ class State(Enum):
     TURN = 3
     MAX_SPEED = 4
     STOP = 5
-    GET_AROUND_OBJECT = 6
-    END = 7
+    BACKWARD = 6
+    GET_AROUND_OBJECT = 7
+    END = 8
 
 
 class MefControl:
@@ -22,8 +23,8 @@ class MefControl:
         self.MAX_ACCELERATION = 500
 
         self.THRESHOLD_COLOR_SENSOR = 30
-        self.ANGLE_SMALL_ROTATION = 10
-        self.ANGLE_BIG_ROTATION = 45
+        self.ANGLE_SMALL_ROTATION = 2
+        self.ANGLE_BIG_ROTATION = 60
 
     def update(self):
         self.setNextState()
@@ -51,7 +52,9 @@ class MefControl:
             else:
                 self.next_state = State.ACCELERATION
         elif self.state == State.TURN:
-            if self.check_color_sensor() == 1:
+            if self.check_distance_sensor() == 1:
+                self.next_state = State.STOP
+            elif self.check_color_sensor() == 1:
                 self.next_state = State.TURN
             elif self.car.get_speed() >= self.MAX_SPEED:
                 self.next_state = State.MAX_SPEED
@@ -65,13 +68,19 @@ class MefControl:
             else:
                 self.next_state = State.MAX_SPEED
         elif self.state == State.STOP:
-            print(f"speed : {self.car.get_speed()}")
-            if self.car.get_speed() <= 10:
-                self.next_state = State.GET_AROUND_OBJECT
+            distance_sensor_value = self.car.distance_sensor.read(self.car.get_location(), self.car.get_rotation()[2])
+            if distance_sensor_value <= 10:
+                self.next_state = State.BACKWARD
             else:
                 self.next_state = State.STOP
+        elif self.state == State.BACKWARD:
+            distance_sensor_value = self.car.distance_sensor.read(self.car.get_location(), self.car.get_rotation()[2])
+            if distance_sensor_value < 30:
+                self.next_state = State.BACKWARD
+            else:
+                self.next_state = State.GET_AROUND_OBJECT
         elif self.state == State.GET_AROUND_OBJECT:
-            if self.frames_get_around_object <= 962:
+            if self.frames_get_around_object <= 833:
                 self.next_state = State.GET_AROUND_OBJECT
             else:
                 self.next_state = State.ACCELERATION
@@ -100,46 +109,42 @@ class MefControl:
             self.car.acceleration = [0, 0, 0]
         elif self.state == State.STOP:
             self.car.acceleration = utils.rotate_vector([0, 0, self.MAX_ACCELERATION], self.car.get_rotation())
-        elif self.state == State.GET_AROUND_OBJECT:
+        elif self.state == State.BACKWARD:
             #PAUSE
             if self.frames_get_around_object < 300:
                 self.car.acceleration = [0, 0, 0]
                 self.car.set_speed(0)
+                self.frames_get_around_object += 1
             # RECULON
-            elif self.frames_get_around_object < 400:
+            else:
                 self.car.set_front_wheel_angle(0)
-                if self.car.get_speed() < self.MAX_SPEED:
+                if self.car.get_speed() < self.MAX_SPEED/3:
                     self.car.acceleration = utils.rotate_vector([0, 0, self.MAX_ACCELERATION], self.car.get_rotation())
                 else:
                     self.car.acceleration = [0, 0, 0]
-            # STOP
-            elif self.frames_get_around_object < 450:
-                self.car.set_front_wheel_angle(0)
-                if self.car.get_speed() <= 10:
-                    self.car.set_speed(0)
-                else:
-                    self.car.acceleration = utils.rotate_vector([0, 0, -self.MAX_ACCELERATION], self.car.get_rotation())
+        elif self.state == State.GET_AROUND_OBJECT:
+            if self.frames_get_around_object == 300:
+                self.car.set_speed(0)
             # REPARTIR
-            elif self.frames_get_around_object < 500:
+            if self.frames_get_around_object < 320:
                 self.car.set_front_wheel_angle(0)
-                if self.car.get_speed() < self.MAX_SPEED:
+                if self.car.get_speed() < self.MAX_SPEED/2:
                     self.car.acceleration = utils.rotate_vector([0, 0, -self.MAX_ACCELERATION], self.car.get_rotation())
                 else:
                     self.car.acceleration = [0, 0, 0]
             # CONTOURNER
-            elif self.frames_get_around_object < 600:
+            elif self.frames_get_around_object < 320+150:
                 self.car.set_front_wheel_angle(25)
-            elif self.frames_get_around_object < 662:
+            elif self.frames_get_around_object < 320+150+94:
                 self.car.set_front_wheel_angle(-25)
-            elif self.frames_get_around_object < 800:
+            elif self.frames_get_around_object < 320+150+94+25:
                 self.car.set_front_wheel_angle(0)
-            elif self.frames_get_around_object < 862:
+            elif self.frames_get_around_object < 320+150+94+25+94:
                 self.car.set_front_wheel_angle(-25)
-            elif self.frames_get_around_object < 962:
+            elif self.frames_get_around_object < 320+150+94+25+94+150:
                 self.car.set_front_wheel_angle(25)
-            elif self.frames_get_around_object == 962:
+            elif self.frames_get_around_object == 320+150+94+25+94+150:
                 self.car.set_front_wheel_angle(-25)
-
             self.frames_get_around_object += 1
         elif self.state == State.END:
             self.car.acceleration = [0, 0, 0]
@@ -170,7 +175,7 @@ class MefControl:
         # 1 = objet détecté
 
         distance_sensor_value = self.car.distance_sensor.read(self.car.get_location(), self.car.get_rotation()[2])
-        if 0 <= distance_sensor_value <= 30:
+        if 0 <= distance_sensor_value <= 14:
             return 1
         else:
             return 0
