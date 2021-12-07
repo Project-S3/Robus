@@ -1,174 +1,208 @@
+import time
 from enum import Enum
-import utils
+
+from car import Car
+from wheels import Wheels
 
 class State(Enum):
     START = 1
-    ACCELERATION = 2
-    TURN = 3
-    MAX_SPEED = 4
-    STOP = 5
-    BACKWARD = 6
-    GET_AROUND_OBJECT = 7
-    END = 8
+
+    STRAIGHT = 3
+    TURN_LEFT_LOW = 31
+    TURN_LEFT_HIGH = 32
+    TURN_RIGHT_LOW = 33
+    TURN_RIGHT_HIGH = 34
+
+    SLOWDOWN = 5
+    STOP = 51
+    BACKWARD = 52
+    MOVE_AROUND_OBJECT = 53
+    
+    END = 7
 
 
 class MefControl:
-    def __init__(self, car):
+    INIT_SPEED = 50 # 60
+    MAX_SPEED = 60 # 80
+
+    SLOWDOWN_SPEED = 45
+    BACKWARD_SPEED = -50
+    MOVE_AROUND_OBJECT_SPEED = 50
+
+    SLOWDOWN_DISTANCE = 40
+
+    THRESHOLD_COLOR_SENSOR = 50
+
+    def __init__(self, car: Car):
         self.car = car
         self.state = State.START
+        self.previous_state = None
         self.next_state = State.START
         self.frames_get_around_object = 0
 
-        self.MAX_SPEED = 200
-        self.MAX_ACCELERATION = 500
-
-        self.THRESHOLD_COLOR_SENSOR = 30
-        self.ANGLE_SMALL_ROTATION = 2
-        self.ANGLE_BIG_ROTATION = 60
-
+        
     def update(self):
         self.setNextState()
-        self.setState()
         self.setOutput()
-        print(f"speed : {self.car.get_speed()}")
+        self.setState()
+        return self.previous_state == State.END
 
     def setState(self):
+        self.previous_state = self.state
         self.state = self.next_state
 
+    def set_follow_line_next_state(self, line):
+        if line == "middle":
+            self.next_state = State.STRAIGHT
+            return True
+        elif line == "left":
+            self.next_state = State.TURN_LEFT_LOW
+            return True
+        elif line == "big_left":
+            self.next_state = State.TURN_LEFT_HIGH
+            return True
+        elif line == "right":
+            self.next_state = State.TURN_RIGHT_LOW
+            return True
+        elif line == "big_right":
+            self.next_state = State.TURN_RIGHT_HIGH
+            return True
+        return False
+
+    def set_final_line_next_state(self, line):
+        if line == "all":
+            self.next_state = State.END
+            return True
+        return False
+
     def setNextState(self):
-        print(f"state : {self.state}")
-        print(f"self.car.wheel_angle : {self.car.wheel_angle}")
-        if self.check_color_sensor() == 2:
-            self.next_state = State.END
-            return
+        if self.previous_state != self.state: print(f"Current State : {self.state}")
+
         if self.state == State.START:
-            self.next_state = State.ACCELERATION
-        elif self.state == State.ACCELERATION:
-            if self.check_distance_sensor() == 1:
+            self.next_state = State.STRAIGHT
+            return
+
+        elif self.state == State.STRAIGHT or self.state == State.TURN_LEFT_LOW or self.state == State.TURN_RIGHT_LOW or self.state == State.SLOWDOWN:
+            line = self.get_line()
+            if self.set_final_line_next_state(line): return
+
+            dist = self.car.read_distance()
+            if 0 <= dist <= 10 + 2:
                 self.next_state = State.STOP
-            elif self.car.get_speed() >= self.MAX_SPEED:
-                self.next_state = State.MAX_SPEED
-            elif self.check_color_sensor() == 1:
-                self.next_state = State.TURN
-            else:
-                self.next_state = State.ACCELERATION
-        elif self.state == State.TURN:
-            if self.check_distance_sensor() == 1:
-                self.next_state = State.STOP
-            elif self.check_color_sensor() == 1:
-                self.next_state = State.TURN
-            elif self.car.get_speed() >= self.MAX_SPEED:
-                self.next_state = State.MAX_SPEED
-            else:
-                self.next_state = State.ACCELERATION
-        elif self.state == State.MAX_SPEED:
-            if self.check_distance_sensor() == 1:
-                self.next_state = State.STOP
-            elif self.check_color_sensor() == 1:
-                self.next_state = State.TURN
-            else:
-                self.next_state = State.MAX_SPEED
+                return
+            elif 0 <= dist <= MefControl.SLOWDOWN_DISTANCE:
+                self.next_state = State.SLOWDOWN
+                return
+    
+            self.set_follow_line_next_state(line)
+            return
+
+        elif self.state == State.TURN_LEFT_HIGH or self.state == State.TURN_RIGHT_HIGH:
+            line = self.get_line()
+            if self.set_final_line_next_state(line): return
+
+            self.set_follow_line_next_state(line)
+            return 
+
         elif self.state == State.STOP:
-            distance_sensor_value = self.car.distance_sensor.read(self.car.get_location(), self.car.get_rotation()[2])
-            if distance_sensor_value <= 10:
-                self.next_state = State.BACKWARD
-            else:
-                self.next_state = State.STOP
+            self.next_state = State.BACKWARD
+            return
+
         elif self.state == State.BACKWARD:
-            distance_sensor_value = self.car.distance_sensor.read(self.car.get_location(), self.car.get_rotation()[2])
-            if distance_sensor_value < 30:
-                self.next_state = State.BACKWARD
-            else:
-                self.next_state = State.GET_AROUND_OBJECT
-        elif self.state == State.GET_AROUND_OBJECT:
-            if self.frames_get_around_object <= 683+25 or (self.frames_get_around_object <= 833+25 and self.check_color_sensor == -1):
-                self.next_state = State.GET_AROUND_OBJECT
-            else:
-                self.next_state = State.ACCELERATION
-                self.frames_get_around_object = 0 # reset for next object
+            if self.previous_state != State.BACKWARD:
+                time.sleep(5)
+            elif self.car.read_distance() >= 25: self.next_state = State.MOVE_AROUND_OBJECT
+            return
+
+        elif self.state == State.MOVE_AROUND_OBJECT:
+            line = self.get_line()
+            if line == "big_left":
+                self.next_state = State.TURN_LEFT_HIGH
+                return
+
+        if self.state == State.BACKWARD:
+            return
+
         elif self.state == State.END:
-            self.next_state = State.END
+            pass
+        
 
     def setOutput(self):
+        if self.state == self.previous_state:
+            return
+        print(f"Set Output For State: {self.state}")
+
         if self.state == State.START:
-            self.car.acceleration = [0, 0, 0]
-        elif self.state == State.ACCELERATION:
-            self.car.acceleration = utils.rotate_vector([0, 0, -self.MAX_ACCELERATION], self.car.get_rotation())
-        elif self.state == State.TURN:
-            color_sensor_values = self.car.color_sensor.read(self.car.get_location(), self.car.get_rotation()[2])
-            if color_sensor_values[0] < self.THRESHOLD_COLOR_SENSOR or color_sensor_values[1] < self.THRESHOLD_COLOR_SENSOR:
-                if color_sensor_values[0] < self.THRESHOLD_COLOR_SENSOR:
-                    self.car.set_front_wheel_angle(self.ANGLE_BIG_ROTATION)
-                else:
-                    self.car.set_front_wheel_angle(self.ANGLE_SMALL_ROTATION)
-            elif color_sensor_values[3] < self.THRESHOLD_COLOR_SENSOR or color_sensor_values[4] < self.THRESHOLD_COLOR_SENSOR:
-                if color_sensor_values[4] < self.THRESHOLD_COLOR_SENSOR:
-                    self.car.set_front_wheel_angle(-self.ANGLE_BIG_ROTATION)
-                else:
-                    self.car.set_front_wheel_angle(-self.ANGLE_SMALL_ROTATION)
-        elif self.state == State.MAX_SPEED:
-            self.car.acceleration = [0, 0, 0]
+            self.car.wheels.set_speed(MefControl.INIT_SPEED, acceleration_dt=None)
+            self.car.wheels.turn(Wheels.STRAITH_MODE)
+            return
+
+        elif self.state == State.STRAIGHT:
+            self.car.wheels.turn(Wheels.STRAITH_MODE)
+            self.car.wheels.set_speed(MefControl.MAX_SPEED)
+            return
+       
+        elif self.state == State.TURN_LEFT_LOW:
+            self.car.wheels.turn(Wheels.LEFT_MODE)
+
+        elif self.state == State.TURN_LEFT_HIGH:
+            # self.car.wheels.set_speed(MefControl.HEAVY_TURN, acceleration_dt=0.005)
+            self.car.wheels.turn(Wheels.LEFT_HEAVY_MODE)
+
+        elif self.state == State.TURN_RIGHT_LOW:
+            self.car.wheels.turn(Wheels.RIGHT_MODE)
+
+        elif self.state == State.TURN_RIGHT_HIGH:
+            # self.car.wheels.set_speed(MefControl.HEAVY_TURN, acceleration_dt=0.005)
+            self.car.wheels.turn(Wheels.RIGHT_HEAVY_MODE)
+
+        elif self.state == State.SLOWDOWN:
+            if self.car.wheels.get_speed() > MefControl.SLOWDOWN_SPEED:
+                self.car.wheels.set_speed(MefControl.SLOWDOWN_SPEED, acceleration_dt=0.03)
+            else:
+                self.car.wheels.set_speed(self.car.wheels.get_speed(), acceleration_dt=None)
+
         elif self.state == State.STOP:
-            self.car.acceleration = utils.rotate_vector([0, 0, self.MAX_ACCELERATION], self.car.get_rotation())
+            self.car.wheels.set_speed(0, acceleration_dt=None)
+
         elif self.state == State.BACKWARD:
-            #PAUSE
-            if self.frames_get_around_object < 300:
-                self.car.acceleration = [0, 0, 0]
-                self.car.set_speed(0)
-                self.frames_get_around_object += 1
-            # RECULON
-            else:
-                self.car.set_front_wheel_angle(0)
-                if self.car.get_speed() < self.MAX_SPEED/3:
-                    self.car.acceleration = utils.rotate_vector([0, 0, self.MAX_ACCELERATION], self.car.get_rotation())
-                else:
-                    self.car.acceleration = [0, 0, 0]
-        elif self.state == State.GET_AROUND_OBJECT:
-            if self.frames_get_around_object == 300:
-                self.car.set_speed(0)
-            # REPARTIR
-            if self.frames_get_around_object < 320:
-                self.car.set_front_wheel_angle(25)
-                if self.car.get_speed() < self.MAX_SPEED/2:
-                    self.car.acceleration = utils.rotate_vector([0, 0, -self.MAX_ACCELERATION], self.car.get_rotation())
-                else:
-                    self.car.acceleration = [0, 0, 0]
-            # CONTOURNER
-            elif self.frames_get_around_object < 320+175:
-                self.car.set_front_wheel_angle(25)
-            else:
-                self.car.set_front_wheel_angle(-25)
-            self.frames_get_around_object += 1
+            self.car.wheels.turn(Wheels.STRAITH_MODE)
+            self.car.wheels.set_speed(MefControl.BACKWARD_SPEED)
+
+        elif self.state == State.MOVE_AROUND_OBJECT:
+            self.car.wheels.set_speed(0, acceleration_dt=None)
+            time.sleep(1)
+            self.car.wheels.set_speed(40, acceleration_dt=None)
+            self.car.wheels.set_angle(45)
+            self.car.wheels.set_speed(MefControl.MOVE_AROUND_OBJECT_SPEED, acceleration_dt=0.2)
+            time.sleep(2)
+            self.car.wheels.set_angle(-45)
+            time.sleep(3)
+            return
+
         elif self.state == State.END:
-            self.car.acceleration = [0, 0, 0]
-            self.car.set_speed(0)
+            self.car.wheels.set_speed(0)
+            self.car.wheels.set_speed(0, acceleration_dt=None)
 
-    def check_color_sensor(self):
-        # 0 = sur la ligne
-        # -1 = pas de ligne détectée
-        # 1 = trop à droite ou à gauche
-        # 2 = fin détectée (T)
-        color_sensor_values = self.car.color_sensor.read(self.car.get_location(), self.car.get_rotation()[2])
-        print(f"color_sensor_values : {color_sensor_values}")
-        nb = 0
-        for val in color_sensor_values:
-            if val < self.THRESHOLD_COLOR_SENSOR:
-                nb = nb + 1
+    def get_line(self):
+        colors = self.car.read_colors()
+
+        nb = sum([c < MefControl.THRESHOLD_COLOR_SENSOR for c in colors])
+
+        if nb == 0:
+            return "none"
         if nb == 5:
-            return 2
-        elif nb == 0:
-            return -1
-        elif color_sensor_values[2] < self.THRESHOLD_COLOR_SENSOR:
-            return 0
-        else:
-            return 1
+            return "all"
 
-    def check_distance_sensor(self):
-        # 0 = pas d'objet
-        # 1 = objet détecté
-
-        distance_sensor_value = self.car.distance_sensor.read(self.car.get_location(), self.car.get_rotation()[2])
-        if 0 <= distance_sensor_value <= 14:
-            return 1
+        if colors[2] < MefControl.THRESHOLD_COLOR_SENSOR:
+            return "middle"
+        elif colors[1] < MefControl.THRESHOLD_COLOR_SENSOR:
+            return "left"
+        elif colors[3] < MefControl.THRESHOLD_COLOR_SENSOR:
+            return "right"
+        elif colors[0] < MefControl.THRESHOLD_COLOR_SENSOR:
+            return "big_left"
+        elif colors[4] < MefControl.THRESHOLD_COLOR_SENSOR:
+            return "big_right"
         else:
-            return 0
+            return "wtf"

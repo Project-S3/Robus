@@ -1,62 +1,36 @@
-import bpy
-from PIL import Image
-import numpy as np
-import matplotlib.pyplot as plt
-
-from utils import rotate_vector
-
-
-class Floor:
-    def __init__(self, floor_matrix, *, px_unit_mm=5, center_point=(0, 0)):
-        self.matrix = floor_matrix
-        self.px_unit = px_unit_mm
-
-        self.offset_px = np.subtract(np.divide(self.matrix.shape[0:2], 2), center_point)
-        self.center_point_offset = np.multiply(self.offset_px, self.px_unit)
-
-    def get_value_at_position(self, x, y):
-        index = (x / self.px_unit, y / self.px_unit)
-        index = np.add(index, np.divide(self.matrix.shape[0:2], 2))
-        index = np.subtract(index, self.offset_px)
-        index = (int(index[0]), int(index[1]))
-        return self.matrix[index]
-
-    def get_scale(self):
-        s = self.matrix.shape[0] / (5 / self.px_unit)
-        return [s, s, 1]
-
-    def get_location(self, z=0):
-        return np.append(self.center_point_offset, z)
-
+import smbus
 
 class ColorSensor:
-    def __init__(self, position_offsets, floor):
-        self.position_offsets = position_offsets
-        self.floor = floor
+    def __init__(self, address=0x11):
+        self.bus = smbus.SMBus(1)
+        self.address = address
 
-    def read(self, car_position, car_rotation_z):
-        car = (car_position[0], car_position[1])
+    def read_raw(self):
+        for _ in range(0, 5):
+            try:
+                raw_result = self.bus.read_i2c_block_data(self.address, 0, 10)
+                connection_ok = True
+                break
+            except:
+                connection_ok = False
 
-        p0 = np.add(car, rotate_vector(self.position_offsets[0], [0, 0, car_rotation_z])[0:2])
-        p1 = np.add(car, rotate_vector(self.position_offsets[1], [0, 0, car_rotation_z])[0:2])
-        p2 = np.add(car, rotate_vector(self.position_offsets[2], [0, 0, car_rotation_z])[0:2])
-        p3 = np.add(car, rotate_vector(self.position_offsets[3], [0, 0, car_rotation_z])[0:2])
-        p4 = np.add(car, rotate_vector(self.position_offsets[4], [0, 0, car_rotation_z])[0:2])
+        if connection_ok:
+            return raw_result
+        else:
+            print("Error accessing %2X" % self.address)
+            return False
 
-        return [
-            self.floor.get_value_at_position(x=p0[0], y=p0[1]),
-            self.floor.get_value_at_position(x=p1[0], y=p1[1]),
-            self.floor.get_value_at_position(x=p2[0], y=p2[1]),
-            self.floor.get_value_at_position(x=p3[0], y=p3[1]),
-            self.floor.get_value_at_position(x=p4[0], y=p4[1])
-        ]
-
-
-if __name__ == '__main__':
-    floor_matrix = np.asarray(Image.open('path.png').convert('L'))
-    floor = Floor(floor_matrix)
-
-    print(floor.get_value_at_position(x=0, y=0))
-
-    plt.imshow(floor_matrix, cmap='gray')
-    plt.show()
+    def read(self, trys=5):
+        for _ in range(trys):
+            raw_result = self.read_raw()
+            if raw_result:
+                analog_result = [0, 0, 0, 0, 0]
+                for i in range(0, 5):
+                    high_byte = raw_result[i * 2] << 8
+                    low_byte = raw_result[i * 2 + 1]
+                    analog_result[i] = high_byte + low_byte
+                    if analog_result[i] > 1024:
+                        continue
+                return analog_result
+            else:
+                raise IOError("Line follower read error. Please check the wiring.")
